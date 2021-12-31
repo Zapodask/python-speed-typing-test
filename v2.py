@@ -11,7 +11,6 @@ class Game:
 
     def __init__(self):
         self.window = pygame.display.set_mode((self.width, self.height))
-        self.title_font = pygame.font.SysFont('arial', 75)
         self.font = pygame.font.SysFont('arial', 50)
         self.phrase_font = pygame.font.SysFont('arial', 40)
 
@@ -28,10 +27,13 @@ class Game:
                         quit()
                     case pygame.MOUSEBUTTONDOWN:
                         if event.button == 1:
-                            if button_rect.collidepoint(event.pos) and self.stage == 'init':
-                                self.stage = 'play'
+                            if self.init_button.collidepoint(event.pos) and self.stage == 'init':
+                                self.stage = 'countdown'
+                                self.countdown_i = 3
+
                                 self.phrase = self.selectPhrase()
                                 self.user_entry = ''
+
                                 self.initial_time = time.time()
                     case pygame.KEYDOWN:
                         if self.stage == 'play':
@@ -45,23 +47,28 @@ class Game:
                                 case _:
                                     self.user_entry += event.unicode
 
-            title = self.title_font.render('Speed typing test', True, (255, 255, 255))
-            self.window.blit(title, (self.getCenter(title.get_rect().width), 10))
+            self.text('Speed typing test', (255, 255, 255), 'center', 10, 70)
 
             match self.stage:
                 case 'init':
-                    button_rect = pygame.draw.rect(self.window, (150, 150, 150), (self.getCenter(350), 150, 350, 70))
+                    self.init_button = self.button(' Click here to start ', (255, 255, 255), 'center', 155, 'large')
 
-                    button_text = self.font.render(' Click here to start ', True, (255, 255, 255))
-                    self.window.blit(button_text, (self.getCenter(button_text.get_rect().width), 155))
+                case 'countdown':
+                    self.text(str(self.countdown_i), (255, 255, 255), 'center', 175, 100)
+
+                    time.sleep(1) if self.countdown_i != 3 else None
+
+                    if self.countdown_i == 0:
+                        self.stage = 'play'
+
+                    self.countdown_i -= 1
 
                 case 'play':
                     phrases = self.formatPhrase(self.phrase)
 
                     phrase_n = 0
                     for p in phrases:
-                        text = self.phrase_font.render(p, True, (255, 255, 0))
-                        self.window.blit(text, (self.getCenter(text.get_rect().width), 155 + phrase_n * 50))
+                        self.text(p, (255, 255, 0), 'center', 155 + phrase_n * 50, 40)
 
                         phrase_n += 1
 
@@ -69,26 +76,22 @@ class Game:
 
                     entry_n = phrase_n + 1
                     for entry in entry_formatted:
-                        entry = self.phrase_font.render(entry, True, (0, 0, 255))
-                        self.window.blit(entry, (self.getCenter(entry.get_rect().width), 155 + entry_n * 50))
+                        self.text(entry, (0, 0, 255), 'center', 155 + entry_n * 50, 40)
 
                         entry_n += 1
 
                 case 'finish':
-                    statistics = self.font.render('Statistics', True, (255, 0, 255))
-                    self.window.blit(statistics, (self.getCenter(statistics.get_rect().width), 155))
+                    self.text('Statistics', (255, 0, 255), 'center', 140, 60)
 
-                    statistics_time = self.font.render(f'Time: {self.total_time}', True, (50, 50, 255))
-                    self.window.blit(statistics_time, (self.getCenterOfMiddle(statistics_time.get_rect().width), 255))
-
-                    average = self.font.render(f'Hit average: {self.average}%', True, ((255, 0, 0) if self.average < 80 else (0, 255, 0)))
-                    self.window.blit(average, (self.getCenterOfMiddle(average.get_rect().width) + self.width / 2, 255))
+                    self.text(f'Time: {self.total_time}', (50, 50, 255), 'left', 255, 50)
+                    
+                    self.text(f'Hit average: {self.average}%', ((255, 0, 0) if self.average < 80 else (0, 255, 0)), 'right', 255, 50)
 
             pygame.display.update()
 
     getCenter = lambda self, x: (self.width - x) / 2
 
-    getCenterOfMiddle = lambda self, x: (self.width / 2 - x) / 2
+    getFourth = lambda self, x: (self.width / 2 - x) / 2
 
     def formatPhrase(self, p: str):
         '''
@@ -152,7 +155,72 @@ class Game:
 
         return (correct / pl) * 100
 
+    def definePosition(self, x: int | str, w: int):
+        '''
+        Define position in X 
+        
+        params:
+        x: x axis = int | 'center' | 'left' | 'right'
+        w: width
+        '''
+        match x:
+            case 'center':
+                return self.getCenter(w)
+            case 'left':
+                return self.getFourth(w)
+            case 'right':
+                return self.getFourth(w) + self.width / 2
+            case _:
+                return x
+
+    def button(self, t: str, c: tuple, x: int | str, y: int, s: str = 'small'):
+        '''
+        Make a button
+
+        params:
+        t: text
+        c: color
+        x: x axis = int | 'center' | 'left' | 'right'
+        y: y axis
+        s: size = 'small' | 'large'
+        '''
+        button_width = 200
+
+        if s == 'large':
+            button_width = 350
+
+        button_text = self.font.render(t, True, c)
+        
+        x = self.definePosition(x, button_text.get_rect().width)
+        
+        button_rect = pygame.draw.rect(self.window, (150, 150, 150), (x, y, button_width, 70))
+
+        self.window.blit(button_text, (x, y))
+
+        return button_rect
+
+    def text(self, t: str, c: tuple, x: int | str, y: int, f: int):
+        '''
+        Make a text
+
+        params:
+        t: text
+        c: color
+        x: x axis = int | 'center' | 'left' | 'right'
+        y: y axis
+        f: font size
+        '''
+        text_font = pygame.font.SysFont('arial', f)
+
+        text = text_font.render(t, True, c)
+
+        x = self.definePosition(x, text.get_rect().width)
+
+        self.window.blit(text, (x, y))
+
+        return text
 
 if __name__ == "__main__":
     pygame.init()
+
     Game()
