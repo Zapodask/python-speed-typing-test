@@ -25,25 +25,35 @@ class Game:
                     case pygame.QUIT:
                         pygame.quit()
                         quit()
+
                     case pygame.MOUSEBUTTONDOWN:
                         if event.button == 1:
                             if self.init_button.collidepoint(event.pos) and self.stage == 'init':
                                 self.stage = 'countdown'
                                 self.countdown_i = 3
 
-                                self.phrase = self.selectPhrase()
+                                self.phrase = self.selectPhrase('br')
                                 self.user_entry = ''
 
-                                self.initial_time = time.time()
+                                self.initial_time = time.time() + 3
+                            
+                            elif self.again_button.collidepoint(event.pos) and self.stage == 'finish':
+                                self.stage = 'init'
+
                     case pygame.KEYDOWN:
                         if self.stage == 'play':
                             match event.key:
                                 case pygame.K_BACKSPACE:
                                     self.user_entry = self.user_entry[:-1]
+
                                 case pygame.K_RETURN | pygame.K_KP_ENTER:
                                     self.stage = 'finish'
                                     self.total_time = round(time.time() - self.initial_time, 2)
                                     self.average = round(self.calcAverage(self.phrase, self.user_entry), 2)
+
+                                case pygame.K_ESCAPE | 126:
+                                    pass
+
                                 case _:
                                     self.user_entry += event.unicode
 
@@ -51,7 +61,7 @@ class Game:
 
             match self.stage:
                 case 'init':
-                    self.init_button = self.button(' Click here to start ', (255, 255, 255), 'center', 155, 'large')
+                    self.init_button = self.button('Click here to start', (255, 255, 255), 'center', 155)
 
                 case 'countdown':
                     self.text(str(self.countdown_i), (255, 255, 255), 'center', 175, 100)
@@ -86,6 +96,8 @@ class Game:
                     self.text(f'Time: {self.total_time}', (50, 50, 255), 'left', 255, 50)
                     
                     self.text(f'Hit average: {self.average}%', ((255, 0, 0) if self.average < 80 else (0, 255, 0)), 'right', 255, 50)
+
+                    self.again_button = self.button('Play again', (255, 255, 255), 'center', 350)
 
             pygame.display.update()
 
@@ -173,7 +185,7 @@ class Game:
             case _:
                 return x
 
-    def button(self, t: str, c: tuple, x: int | str, y: int, s: str = 'small'):
+    def button(self, t: str, c: tuple, x: int | str, y: int):
         '''
         Make a button
 
@@ -184,16 +196,13 @@ class Game:
         y: y axis
         s: size = 'small' | 'large'
         '''
-        button_width = 200
+        button_text = self.font.render(f'  {t}  ', True, c)
 
-        if s == 'large':
-            button_width = 350
-
-        button_text = self.font.render(t, True, c)
+        button_width, button_height = button_text.get_size()
         
-        x = self.definePosition(x, button_text.get_rect().width)
+        x = self.definePosition(x, button_width)
         
-        button_rect = pygame.draw.rect(self.window, (150, 150, 150), (x, y, button_width, 70))
+        button_rect = pygame.draw.rect(self.window, (150, 150, 150), (x, y, button_width, button_height + 5), border_radius = 7)
 
         self.window.blit(button_text, (x, y))
 
