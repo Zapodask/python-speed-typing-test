@@ -2,6 +2,7 @@ import pygame
 import random
 import time
 
+
 class Game:
     width = 800
     height = 500
