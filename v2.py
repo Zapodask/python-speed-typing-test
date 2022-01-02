@@ -2,17 +2,41 @@ import pygame
 import random
 import time
 
-
 class Game:
     width = 800
     height = 500
 
-    stage = 'init'
+    init_button = language_button = again_button = None
+
+    language = "en"
+    fields_en = {
+            "language": "en",
+            "title": "Speed typing test",
+            "init_button": "Click here to start",
+            "language_button": "Change language",
+            "statistics": "Statistics",
+            "time": "Time",
+            "average": "Hit average",
+            "again": "Play again",
+        }
+    fields_br = {
+            "language": "br", 
+            "title": "Teste de digitação",
+            "init_button": "Clique para iniciar",
+            "language_button": "Trocar idioma",
+            "statistics": "Estatísticas",
+            "time": "Tempo",
+            "average": "Média",
+            "again": "Jogar novamente",
+        }
+    fields = fields_en
+
+    stage = "init"
 
     def __init__(self):
         self.window = pygame.display.set_mode((self.width, self.height))
-        self.font = pygame.font.SysFont('arial', 50)
-        self.phrase_font = pygame.font.SysFont('arial', 40)
+        self.font = pygame.font.SysFont("arial", 50)
+        self.phrase_font = pygame.font.SysFont("arial", 40)
 
         self.main()
 
@@ -28,26 +52,40 @@ class Game:
 
                     case pygame.MOUSEBUTTONDOWN:
                         if event.button == 1:
-                            if self.init_button.collidepoint(event.pos) and self.stage == 'init':
-                                self.stage = 'countdown'
-                                self.countdown_i = 3
+                            if self.stage == "init":
+                                if self.init_button and self.init_button.collidepoint(event.pos):
+                                    self.stage = "countdown"
+                                    self.countdown_i = 3
 
-                                self.phrase = self.selectPhrase('br')
-                                self.user_entry = ''
+                                    self.phrase = self.selectPhrase(self.language)
+                                    self.user_entry = ""
 
-                                self.initial_time = time.time() + 3
-                            
-                            elif self.again_button.collidepoint(event.pos) and self.stage == 'finish':
-                                self.stage = 'init'
+                                    self.initial_time = time.time() + 3
+                                
+                                if self.language_button and self.language_button.collidepoint(event.pos):
+                                    if self.language == "en":
+                                        self.language = "br"
+
+                                        self.fields = self.fields_br
+
+                                    else:
+                                        self.language = "en"
+
+                                        self.fields = self.fields_en
+                                    
+                                    self.fields
+
+                            if self.again_button and self.again_button.collidepoint(event.pos) and self.stage == "finish":
+                                self.stage = "init"
 
                     case pygame.KEYDOWN:
-                        if self.stage == 'play':
+                        if self.stage == "play":
                             match event.key:
                                 case pygame.K_BACKSPACE:
                                     self.user_entry = self.user_entry[:-1]
 
                                 case pygame.K_RETURN | pygame.K_KP_ENTER:
-                                    self.stage = 'finish'
+                                    self.stage = "finish"
                                     self.total_time = round(time.time() - self.initial_time, 2)
                                     self.average = round(self.calcAverage(self.phrase, self.user_entry), 2)
 
@@ -57,28 +95,31 @@ class Game:
                                 case _:
                                     self.user_entry += event.unicode
 
-            self.text('Speed typing test', (255, 255, 255), 'center', 10, 70)
+            self.text(self.fields.get('title'), (255, 255, 255), "center", 10, 70)
 
             match self.stage:
-                case 'init':
-                    self.init_button = self.button('Click here to start', (255, 255, 255), 'center', 155)
+                case "init":
+                    self.init_button = self.button(self.fields.get('init_button'), (255, 255, 255), "center", 155)
 
-                case 'countdown':
-                    self.text(str(self.countdown_i), (255, 255, 255), 'center', 175, 100)
+                    self.text("English" if self.language == "en" else "Português", (255, 255, 255), "right", 350, 50)
+                    self.language_button = self.button(self.fields.get('language_button'), (255, 255, 255), "right", 420)
+
+                case "countdown":
+                    self.text(str(self.countdown_i), (255, 255, 255), "center", 175, 100)
 
                     time.sleep(1) if self.countdown_i != 3 else None
 
                     if self.countdown_i == 0:
-                        self.stage = 'play'
+                        self.stage = "play"
 
                     self.countdown_i -= 1
 
-                case 'play':
+                case "play":
                     phrases = self.formatPhrase(self.phrase)
 
                     phrase_n = 0
                     for p in phrases:
-                        self.text(p, (255, 255, 0), 'center', 155 + phrase_n * 50, 40)
+                        self.text(p, (255, 255, 0), "center", 155 + phrase_n * 50, 40)
 
                         phrase_n += 1
 
@@ -86,18 +127,18 @@ class Game:
 
                     entry_n = phrase_n + 1
                     for entry in entry_formatted:
-                        self.text(entry, (0, 0, 255), 'center', 155 + entry_n * 50, 40)
+                        self.text(entry, (0, 0, 255), "center", 155 + entry_n * 50, 40)
 
                         entry_n += 1
 
-                case 'finish':
-                    self.text('Statistics', (255, 0, 255), 'center', 140, 60)
+                case "finish":
+                    self.text(self.fields.get('statistics'), (255, 0, 255), "center", 140, 60)
 
-                    self.text(f'Time: {self.total_time}', (50, 50, 255), 'left', 255, 50)
+                    self.text(f"{self.fields.get('time')}: {self.total_time}", (50, 50, 255), "left", 255, 50)
                     
-                    self.text(f'Hit average: {self.average}%', ((255, 0, 0) if self.average < 80 else (0, 255, 0)), 'right', 255, 50)
+                    self.text(f"{self.fields.get('average')}: {self.average}%", ((255, 0, 0) if self.average < 80 else (0, 255, 0)), "right", 255, 50)
 
-                    self.again_button = self.button('Play again', (255, 255, 255), 'center', 350)
+                    self.again_button = self.button(self.fields.get('again'), (255, 255, 255), "center", 350)
 
             pygame.display.update()
 
@@ -106,24 +147,24 @@ class Game:
     getFourth = lambda self, x: (self.width / 2 - x) / 2
 
     def formatPhrase(self, p: str):
-        '''
+        """
         Format phrase width to show
 
         params:
         p: phrase
-        '''
+        """
         words = p.split()
 
         phrases = []
         n = 0
         width_used = 0
         for word in words:
-            word_size = self.phrase_font.size(f'{word} ')[0]
+            word_size = self.phrase_font.size(f"{word} ")[0]
             if word_size + width_used < self.width:
                 if width_used == 0:
                     phrases.append(word)
                 else:
-                    phrases[n] += f' {word}'
+                    phrases[n] += f" {word}"
                 width_used += word_size
             else:
                 phrases.append(word)
@@ -132,7 +173,7 @@ class Game:
         
         return phrases
 
-    def selectPhrase(self, l: str = 'en'):
+    def selectPhrase(self, l: str = "en"):
         """
         Select random phrase
 
@@ -168,35 +209,35 @@ class Game:
         return (correct / pl) * 100
 
     def definePosition(self, x: int | str, w: int):
-        '''
+        """
         Define position in X 
         
         params:
-        x: x axis = int | 'center' | 'left' | 'right'
+        x: x axis = int | "center" | "left" | "right"
         w: width
-        '''
+        """
         match x:
-            case 'center':
+            case "center":
                 return self.getCenter(w)
-            case 'left':
+            case "left":
                 return self.getFourth(w)
-            case 'right':
+            case "right":
                 return self.getFourth(w) + self.width / 2
             case _:
                 return x
 
     def button(self, t: str, c: tuple, x: int | str, y: int):
-        '''
+        """
         Make a button
 
         params:
         t: text
         c: color
-        x: x axis = int | 'center' | 'left' | 'right'
+        x: x axis = int | "center" | "left" | "right"
         y: y axis
-        s: size = 'small' | 'large'
-        '''
-        button_text = self.font.render(f'  {t}  ', True, c)
+        s: size = "small" | "large"
+        """
+        button_text = self.font.render(f"  {t}  ", True, c)
 
         button_width, button_height = button_text.get_size()
         
@@ -209,17 +250,17 @@ class Game:
         return button_rect
 
     def text(self, t: str, c: tuple, x: int | str, y: int, f: int):
-        '''
+        """
         Make a text
 
         params:
         t: text
         c: color
-        x: x axis = int | 'center' | 'left' | 'right'
+        x: x axis = int | "center" | "left" | "right"
         y: y axis
         f: font size
-        '''
-        text_font = pygame.font.SysFont('arial', f)
+        """
+        text_font = pygame.font.SysFont("arial", f)
 
         text = text_font.render(t, True, c)
 
